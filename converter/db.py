@@ -12,7 +12,17 @@ def instantiate_connection():
     return psycopg2.connect(uri)
 
 def create() -> None:
-    pass
+    """"""
+
+    with instantiate_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            f"""CREATE TABLE IF NOT EXISTS
+            {TABLE_NAME}(song TEXT, artist TEXT, youtube TEXT[], spotify TEXT[])"""
+        )
+
+        connection.commit()
 
 def is_link_same(current_db_link: str, new_link: str) -> bool:
     """Determines if current link is the same as the new link."""
@@ -92,4 +102,6 @@ def query_song(**kwargs: dict) -> Tuple[str, str, str] | None:
         
         return row if row else None
             
-
+def delete_song(song_name: str, artist_name: str) -> None:
+    """"""
+    pass
