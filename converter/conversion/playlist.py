@@ -1,7 +1,9 @@
-from typing import dataclass, List
+from typing import dataclass, List, Tuple
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from song import SongObject, SongList
+from error import ErrorSong, ErrorSongList
 from googleapiclient.discovery import build
 
 @dataclass
@@ -77,12 +79,15 @@ class Youtube:
 
         return found_playlist
 
-    def create_youtube_playlist():
-        pass
+    def create_youtube_playlist(self, playlist_name_input: str, playlist_desc_input: str | None):
+        """"""
 
     def delete_youtube_playlist():
         pass
     
+    def query_song() -> Tuple[bool, None | object]:
+        pass
+        
     def add_song(playlist_name: str, song_name: str):
         pass
 
@@ -152,13 +157,54 @@ class Spotify:
             description=(playlist_desc_input if playlist_desc_input else "new playlist")
         )
 
-    def delete_spotify_playlist():
-        pass
+    def delete_spotify_playlist(self, playlist: PlaylistObject) -> None:
+        """"""
 
-    def add_song(playlist_name: str, song_name: str):
-        pass
+        spotify_instance = self.instantiate_spotify()
 
+        spotify_instance.playlist_remove_all_occurrences_of_items(
+            playlist_id=playlist.playlist_id
+        )
+
+        spotify_instance.playlist_change_details(
+            playlist_id=playlist.playlist_id,
+            name=f"[DELETED]{playlist.name}",
+            public=False,
+            collaborative=False,
+            description=f"[DELETED]{playlist.description}"
+        )
         
+    def add_song(self, playlist: PlaylistObject, song_name: str) -> None:
+        """"""
 
+        found_song: SongObject | None = self.query_song(song_name)
 
-        
+        if not found_song:
+            # do this
+            pass
+
+        spotify_instance = self.instantiate_spotify()
+
+        spotify_instance.playlist_add_items(playlist_id=playlist.playlist_id,
+                                                           items=[found_song.identifier],
+                                                           position=None)
+ 
+    def query_song(self, song_name: str) -> SongObject | None:
+            """"""
+            rq = self.instantiate_spotify().search(q=song_name, type="track")
+            
+            if not rq["tracks"]["items"]:
+                return None
+            
+            current_song_obj = SongObject(
+                song_name=rq["tracks"]["items"][0]["name"],
+                artist_name=rq["tracks"]["items"][0]["artist"],
+                identifier=rq["tracks"]["items"][0]["uri"]
+            )
+
+            if len(rq["tracks"]["items"]) > 1:
+                pass
+                # ask the user which one
+            else:
+                return current_song_obj
+

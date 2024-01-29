@@ -10,9 +10,9 @@ import os
 class SongObject:
     """Struct holding data for a full song object"""
 
+    song_name: str
     artist_name: str
-    youtube_link: Tuple[str, str] | None
-    spotify_link: Tuple[str, str] | None
+    identifier: str
 
 @dataclass
 class SongList:
