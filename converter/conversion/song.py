@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import List
 from db import update_links_in_db, query_song, add_song_row_in_db, delete_song
-from error import Error
 from typing import Tuple
 import os
 

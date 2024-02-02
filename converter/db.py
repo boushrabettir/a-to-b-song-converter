@@ -1,6 +1,5 @@
 import psycopg2
 import os
-from conversion.song import SongObject, SongList
 from typing import Tuple
 
 TABLE_NAME: str = os.getenv("TABLE_NAME")
@@ -29,7 +28,7 @@ def is_link_same(current_db_link: str, new_link: str) -> bool:
 
     return current_db_link == new_link
 
-def update_links_in_db(current_song_object: SongObject) -> None:
+def update_links_in_db(current_song_object) -> None:
     """Inserts song into row; Updates link values."""
 
     SONG_NAME: str = current_song_object.song_name
@@ -63,7 +62,7 @@ def update_links_in_db(current_song_object: SongObject) -> None:
 
         connection.commit()
 
-def add_song_row_in_db(current_song_object: SongObject) -> None:
+def add_song_row_in_db(current_song_object) -> None:
     """"""
 
     SONG_NAME: str = current_song_object.song_name

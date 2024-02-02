@@ -1,10 +1,14 @@
-from typing import dataclass, List, Tuple
+from typing import List, Tuple
+from dataclasses import dataclass
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from song import SongObject, SongList
+from conversion.song import SongObject, SongList
 from error import ErrorSong, ErrorSongList
 from googleapiclient.discovery import build
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @dataclass
 class PlaylistObject:
@@ -24,11 +28,11 @@ class PlaylistList:
 class Youtube:
     """A Youtube class interacting with Youtube API"""
 
-    def instantiate_youtube() -> any:
+    def instantiate_youtube(self) -> any:
         YT_KEY: str = os.getenv("YT")
         YOUTUBE_OBJ = build("youtube",
                             "v3",
-                                youtube_obj=YT_KEY)
+                            developerKey=YT_KEY)
         
         return YOUTUBE_OBJ
         
@@ -39,22 +43,29 @@ class Youtube:
                                        type="channel",
                                        q=username)
         res=rq.execute()
-
-        return res['items'][0]['id']['channelId']
+        print(res)
+        if not res["etag"]:
+            return "DELETE THIS ADD CUSTOM MESSAGE"
+        
+        return res["etag"]
         
     def retrieve_playlists(self, username: str) -> PlaylistList:
         """Retrieves all users playlist in a custom PlaylistObject class"""
 
-        user_playlists = PlaylistList()
+        user_playlists = PlaylistList([])
 
         channel_id: str = self.retrieve_channel_id(username)
+        print(channel_id)
 
         rq = self.instantiate_youtube().playlists().list(
             part="snippet",
             channelId=channel_id,
         )
         res = rq.execute()
-
+        
+        if not res["items"]:
+            return "NOTHING"
+        
         for response_object in res["items"]:
             
             playlist_name: str = response_object["snippet"]["title"]
@@ -75,7 +86,13 @@ class Youtube:
         """Finds a specific playlist within the PlaylistList custom object"""
 
         all_user_playlists: PlaylistList = self.retrieve_playlists(username)
-        found_playlist: PlaylistObject | None = [current_playlist for current_playlist in all_user_playlists if current_playlist["name"].lower() == playlist_input_name.lower()]
+
+        found_playlist : PlaylistList | None = []
+
+        for current_playlist in all_user_playlists.playlist:
+            if current_playlist.name.lower() == playlist_input_name.lower():
+                found_playlist.append(current_playlist)
+
 
         return found_playlist
 
