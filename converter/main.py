@@ -54,9 +54,14 @@ def main():
     #     playlist_desc: str | None = input("Playlist desc pls")
 
     temp = Youtube()
-    found = temp.find_playlist("bbgodd3ss", "QUAINT")
+    found = temp.query_song("Starships")
+    playlist = temp.find_playlist("bbgodd3ss", "Lethal Company")
+
     print(found)
-        
+    print("\n")
+    print(playlist)
+    
+    temp.add_song(playlist[0].playlist_id, found.list_of_songs[0].identifier)
 
 
     

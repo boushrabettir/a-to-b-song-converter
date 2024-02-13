@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from google.oauth2.credentials import Credentials
 from conversion.song import SongObject, SongList
 from error import ErrorSong, ErrorSongList
 from googleapiclient.discovery import build
@@ -35,7 +36,11 @@ class Youtube:
                             developerKey=YT_KEY)
         
         return YOUTUBE_OBJ
-        
+    
+    def authentication() -> any:
+        """"""
+
+
     def retrieve_channel_id(self, username: str) -> str:
         """Retrieves channel id to retrieve playlists"""
 
@@ -43,27 +48,27 @@ class Youtube:
                                        type="channel",
                                        q=username)
         res=rq.execute()
-        print(res)
-        if not res["etag"]:
+        
+        if not res.get("items")[0].get("id").get("channelId"):
             return "DELETE THIS ADD CUSTOM MESSAGE"
         
-        return res["etag"]
-        
+        return res.get("items")[0].get("id").get("channelId")
+
     def retrieve_playlists(self, username: str) -> PlaylistList:
         """Retrieves all users playlist in a custom PlaylistObject class"""
 
         user_playlists = PlaylistList([])
 
         channel_id: str = self.retrieve_channel_id(username)
-        print(channel_id)
-
+ 
         rq = self.instantiate_youtube().playlists().list(
             part="snippet",
             channelId=channel_id,
         )
+
         res = rq.execute()
         
-        if not res["items"]:
+        if not res.get("items"):
             return "NOTHING"
         
         for response_object in res["items"]:
@@ -102,11 +107,57 @@ class Youtube:
     def delete_youtube_playlist():
         pass
     
-    def query_song() -> Tuple[bool, None | object]:
-        pass
+    def query_song(self, song_name: str) -> SongList:
+        """"""
+       
+        rq = self.instantiate_youtube().search().list(
+            part="snippet",
+            type="video",
+            q=song_name,
+            maxResults=1
+        )
+
+        res = rq.execute()
+
+        if not res.get("items"):
+            return "NO"
         
-    def add_song(playlist_name: str, song_name: str):
-        pass
+        song_list = SongList([])
+    
+        for response_object in res.get("items"):
+            object_name = response_object.get("snippet").get("title")
+            object_artist = response_object.get("snippet").get("channelTitle")
+            object_id = response_object.get("id").get("videoId")
+
+            current_song_object = SongObject(object_name, object_artist, object_id)
+            song_list.list_of_songs.append(current_song_object)
+
+        return song_list
+        
+    def add_song(self, playlist_id: str, video_id: str) -> None:
+        """Add's a specific song to a specific playlist"""
+
+        rq = self.instantiate_youtube().playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": video_id
+                    }
+                }
+            }
+        )
+
+        authentication_credentials_token = self.authentication()
+
+        if not authentication_credentials_token:
+            return "NO TOKEN AHH"
+        
+        rq.headers["Authorization"] = f"Bearer {authentication_credentials_token}"
+
+        res = rq.execute()
 
 @dataclass
 class Spotify:
