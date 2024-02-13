@@ -7,7 +7,7 @@ from conversion.song import SongObject
 class ErrorSong:
     """"""
     
-    error_song: SongObject
+    error_song: str
 
 @dataclass
 class ErrorSongList:
@@ -23,8 +23,8 @@ class Error:
     def verify_env_variables() -> None:
         """"""
 
-        REQUIRED_VARS: Set[str] = set(["YT",
-                                       ])
+        REQUIRED_VARS: Set[str] = set(["YT"])
+
         for env_variable in REQUIRED_VARS:
             if env_variable not in os.environ:
                 raise EnvironmentError(f"{env_variable} has not been set. Please try again!\n")
@@ -34,11 +34,26 @@ class Error:
 
         return f"{table_name} does not exist."
 
-    def link_no_exist(type: bool, song: SongObject) -> str:
+    def song_does_not_exist(type: bool, song: SongObject) -> str:
         """"""
 
         platform: str  = "Youtube" if type else "Spotify"
         return f"{platform} link does not exist for {song.song_name} ({song.artist_name})\n"
+    
+    def empty_item_response() -> str:
+        """Response after request execution is empty."""
+
+        return "Reponse has empty items."
+
+    def channelId_does_not_exist(username: str) -> str:
+        """Response after request execution does not exist."""
+
+        return f"Channel ID for '{username}' does not exist."
+    
+    def auth_token_does_not_exist() -> str:
+        """Authentication credentials token does not exist."""
+
+        return "Authentication token does not exist, please try again."    
     
     def amount_of_deleted_songs() -> str:
         return f""

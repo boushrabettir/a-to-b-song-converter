@@ -8,6 +8,7 @@ from conversion.song import SongObject, SongList
 from error import ErrorSong, ErrorSongList
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
+from error import Error
 
 load_dotenv()
 
@@ -30,6 +31,10 @@ class Youtube:
     """A Youtube class interacting with Youtube API"""
 
     def instantiate_youtube(self) -> any:
+        """Instantiates Youtube object."""
+
+        Error().verify_env_variables()
+
         YT_KEY: str = os.getenv("YT")
         YOUTUBE_OBJ = build("youtube",
                             "v3",
@@ -38,7 +43,7 @@ class Youtube:
         return YOUTUBE_OBJ
     
     def authentication() -> any:
-        """"""
+        """Request authentication for manipulating playlists."""
 
 
     def retrieve_channel_id(self, username: str) -> str:
@@ -50,7 +55,7 @@ class Youtube:
         res=rq.execute()
         
         if not res.get("items")[0].get("id").get("channelId"):
-            return "DELETE THIS ADD CUSTOM MESSAGE"
+            raise Error().empty_item_response()
         
         return res.get("items")[0].get("id").get("channelId")
 
@@ -69,13 +74,13 @@ class Youtube:
         res = rq.execute()
         
         if not res.get("items"):
-            return "NOTHING"
+            raise Error().empty_item_response()
         
-        for response_object in res["items"]:
+        for response_object in res.get("items"):
             
-            playlist_name: str = response_object["snippet"]["title"]
-            playlist_desc: str = response_object["snippet"]["description"]
-            playlist_id: str = response_object["id"]
+            playlist_name: str = response_object.get("snippet").get("title")
+            playlist_desc: str = response_object.get("snippet").get("description")
+            playlist_id: str = response_object.get("id")
             
             current_object = PlaylistObject(
                 name=playlist_name,
@@ -102,28 +107,32 @@ class Youtube:
         return found_playlist
 
     def create_youtube_playlist(self, playlist_name_input: str, playlist_desc_input: str | None):
-        """"""
+        """Creates Youtube playlist for designated user."""
 
-    def delete_youtube_playlist():
-        pass
+    def delete_youtube_playlist(self, playlist_id: str):
+        """Deletes Youtube playlist for designated user."""
     
-    def query_song(self, song_name: str) -> SongList:
-        """"""
+    def query_song(self, song_name: str) -> Tuple[SongList, ErrorSongList]:
+        """Query a music video song. Returns a list of song objects"""
        
         rq = self.instantiate_youtube().search().list(
             part="snippet",
             type="video",
             q=song_name,
-            maxResults=1
+            maxResults=5
         )
-
         res = rq.execute()
 
+        # Add error song in error list for ending CLI message
+        error_song_list = ErrorSongList([])
         if not res.get("items"):
-            return "NO"
+            song_not_found = ErrorSong(song_name)
+            error_song_list.list_of_songs.append(song_not_found)
+
+        # TODO - IF res.get("items") IS GREATER THAN 1 THAN PROMPT THE USER TO FIGURE OUT WHICH SONG
         
         song_list = SongList([])
-    
+
         for response_object in res.get("items"):
             object_name = response_object.get("snippet").get("title")
             object_artist = response_object.get("snippet").get("channelTitle")
@@ -132,10 +141,10 @@ class Youtube:
             current_song_object = SongObject(object_name, object_artist, object_id)
             song_list.list_of_songs.append(current_song_object)
 
-        return song_list
+        return (song_list, error_song_list)
         
     def add_song(self, playlist_id: str, video_id: str) -> None:
-        """Add's a specific song to a specific playlist"""
+        """Add's a specific song to a specific playlist."""
 
         rq = self.instantiate_youtube().playlistItems().insert(
             part="snippet",
@@ -150,54 +159,58 @@ class Youtube:
             }
         )
 
+        # Add authentication header to manipluate playlist
         authentication_credentials_token = self.authentication()
-
-        if not authentication_credentials_token:
-            return "NO TOKEN AHH"
-        
         rq.headers["Authorization"] = f"Bearer {authentication_credentials_token}"
 
-        res = rq.execute()
+        rq.execute()
 
 @dataclass
 class Spotify:
     """A Spotify class interacting with Spotipy"""
     
 
-    def instantiate_spotify() -> spotipy.Spotify:
+    def instantiate_spotify(self) -> spotipy.Spotify:
         """Instantiates connection to Spotify"""
 
-        CLIENT_ID: str = os.getenv("SPOTIFY_ID")
-        CLIENT_SECRET: str = os.getenv("SPOTIFY_SECRET")
+        #Error().verify_env_variables()
 
-        return spotipy.Spotify(
+        CLIENT_ID: str = os.getenv("SPOTIFY_CLIENT_ID")
+        CLIENT_SECRET: str = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        sp = spotipy.Spotify(
             auth_manager=SpotifyClientCredentials(
                 client_id=CLIENT_ID,
                 client_secret=CLIENT_SECRET
             )
         )
-    
+        return sp
+
     def retrieve_playlists(self) -> PlaylistList:
         """Retrieves all users playlist in a custom PlaylistObject class"""
 
-        user_playlists = PlaylistList()
+        user_playlists = PlaylistList([])
 
         spotify_instance = self.instantiate_spotify()
         
-        users_playlists = spotify_instance.current_user_playlists()
+        # users_playlists = spotify_instance.current_user_playlists()
+        # print(user_playlists)
+        results = spotify_instance.search(q='weezer', limit=20)
+        for idx, track in enumerate(results['tracks']['items']):
+            print(idx, track['name'])
 
-        for playlist in users_playlists["items"]:
-            playlist_name: str = playlist["name"]
-            playlist_description: str = playlist["description"]
-            playlist_id: str = playlist["id"]
+        # for playlist in users_playlists.get("items"):
+        #     playlist_name: str = playlist["name"]
+        #     playlist_description: str = playlist["description"]
+        #     playlist_id: str = playlist["id"]
     
-            current_object = PlaylistObject(
-                name=playlist_name,
-                description=playlist_description,
-                playlist_id=playlist_id
-            )
+        #     current_object = PlaylistObject(
+        #         name=playlist_name,
+        #         description=playlist_description,
+        #         playlist_id=playlist_id
+        #     )
 
-            user_playlists.playlist.append(current_object)
+        #     user_playlists.playlist.append(current_object)
         
         return user_playlists
 
@@ -261,18 +274,19 @@ class Spotify:
             """"""
             rq = self.instantiate_spotify().search(q=song_name, type="track")
             
-            if not rq["tracks"]["items"]:
+            if not rq.get("tracks").get("items"):
                 return None
-            
-            current_song_obj = SongObject(
-                song_name=rq["tracks"]["items"][0]["name"],
-                artist_name=rq["tracks"]["items"][0]["artist"],
-                identifier=rq["tracks"]["items"][0]["uri"]
-            )
 
-            if len(rq["tracks"]["items"]) > 1:
-                pass
-                # ask the user which one
-            else:
+            found_songs = rq.get("tracks").get("items")
+
+            if len(found_songs) == 1:
+                current_song_obj = SongObject(
+                song_name=found_songs[0].get("name"),
+                artist_name=found_songs[0].get("artist"),
+                identifier=found_songs[0].get("uri")
+                )
+
                 return current_song_obj
+            
 
+            # TODO - Ask which song it is!
