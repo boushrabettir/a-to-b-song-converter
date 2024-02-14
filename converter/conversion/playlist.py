@@ -195,9 +195,9 @@ class Spotify:
         
         # users_playlists = spotify_instance.current_user_playlists()
         # print(user_playlists)
-        results = spotify_instance.search(q='weezer', limit=20)
-        for idx, track in enumerate(results['tracks']['items']):
-            print(idx, track['name'])
+        # results = spotify_instance.search(q='weezer', limit=20)
+        # for idx, track in enumerate(results['tracks']['items']):
+        #     print(idx, track['name'])
 
         # for playlist in users_playlists.get("items"):
         #     playlist_name: str = playlist["name"]
@@ -261,8 +261,7 @@ class Spotify:
         found_song: SongObject | None = self.query_song(song_name)
 
         if not found_song:
-            # do this
-            pass
+            raise Error().song_does_not_exist()
 
         spotify_instance = self.instantiate_spotify()
 

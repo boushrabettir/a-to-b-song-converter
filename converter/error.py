@@ -55,5 +55,10 @@ class Error:
 
         return "Authentication token does not exist, please try again."    
     
+    def not_found_song(song_name: str) -> str:
+        """Song not found after query"""
+
+        return f"'{song_name}' is not found."
+    
     def amount_of_deleted_songs() -> str:
         return f""
