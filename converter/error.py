@@ -60,5 +60,10 @@ class Error:
 
         return f"'{song_name}' is not found."
     
+    def no_playlists() -> str:
+        """No playlists exist."""
+
+        return f"No playlists found."
+    
     def amount_of_deleted_songs() -> str:
         return f""

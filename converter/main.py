@@ -64,8 +64,8 @@ def main():
     # temp.add_song(playlist[0].playlist_id, found.list_of_songs[0].identifier)
 
     temp = Spotify()
-    temp.retrieve_playlists()
-
+    
+    print(temp.query_song("Starships"))
 
     
 

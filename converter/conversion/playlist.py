@@ -165,18 +165,59 @@ class Youtube:
 
         rq.execute()
 
+from spotipy.oauth2 import SpotifyOAuth
+
 @dataclass
 class Spotify:
     """A Spotify class interacting with Spotipy"""
     
 
+    # def instantiate_connection(self) -> spotipy.Spotify:
+    #     """Instantiates connection to Spotify"""
+
+    #     CLIENT_ID: str = os.getenv("SPOTIFY_CLIENT_ID")
+    #     CLIENT_SECRET: str = os.getenv("SPOTIFY_CLIENT_SECRET")
+
+    #     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+    #         client_id=CLIENT_ID,
+    #         client_secret=CLIENT_SECRET,
+    #         redirect_uri="https://open.spotify.com/",
+    #         scope="playlist-modify-public",
+    #     ))
+
+    #     return sp
+    
+    def retrieve_access_token(self) -> str:
+        """"""
+        CLIENT_ID: str = os.getenv("SPOTIFY_CLIENT_ID")
+        CLIENT_SECRET: str = os.getenv("SPOTIFY_CLIENT_SECRET")
+
+        auth_manager = SpotifyOAuth(
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            redirect_uri="https://open.spotify.com/",
+            scope="playlist-modify-public",
+        )
+
+        print(auth_manager.get_authorize_url())
+        access = auth_manager.get_access_token(as_dict=False)
+        return access
+    
     def instantiate_spotify(self) -> spotipy.Spotify:
-        """Instantiates connection to Spotify"""
+        """Instantiates object to Spotify"""
 
         #Error().verify_env_variables()
 
         CLIENT_ID: str = os.getenv("SPOTIFY_CLIENT_ID")
         CLIENT_SECRET: str = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        # auth_manager = spotipy.Spotify(auth_manager=SpotifyOAuth(
+        #     client_id=CLIENT_ID,
+        #     client_secret=CLIENT_SECRET,
+        #     redirect_uri="https://open.spotify.com/",
+        #     scope="playlist-modify-public",
+        # ))
+            
         
         sp = spotipy.Spotify(
             auth_manager=SpotifyClientCredentials(
@@ -184,6 +225,7 @@ class Spotify:
                 client_secret=CLIENT_SECRET
             )
         )
+
         return sp
 
     def retrieve_playlists(self) -> PlaylistList:
@@ -191,46 +233,54 @@ class Spotify:
 
         user_playlists = PlaylistList([])
 
+        self.instantiate_connection()
+
         spotify_instance = self.instantiate_spotify()
         
-        # users_playlists = spotify_instance.current_user_playlists()
-        # print(user_playlists)
-        # results = spotify_instance.search(q='weezer', limit=20)
-        # for idx, track in enumerate(results['tracks']['items']):
-        #     print(idx, track['name'])
+        users_playlists = spotify_instance.current_user_playlists()
+        
+        if len(users_playlists.get("items")) == 0:
+            raise Error().no_playlists()
+        
+        for playlist in users_playlists.get("items"):
+            playlist_name: str = playlist.get("name")
+            playlist_description: str = playlist.get("description")
+            playlist_id: str = playlist.get("id")
 
-        # for playlist in users_playlists.get("items"):
-        #     playlist_name: str = playlist["name"]
-        #     playlist_description: str = playlist["description"]
-        #     playlist_id: str = playlist["id"]
-    
-        #     current_object = PlaylistObject(
-        #         name=playlist_name,
-        #         description=playlist_description,
-        #         playlist_id=playlist_id
-        #     )
+            current_playlist_object = PlaylistObject(
+                name=playlist_name,
+                description=playlist_description,
+                playlist_id=playlist_id
+            )
 
-        #     user_playlists.playlist.append(current_object)
+            user_playlists.playlist.append(current_playlist_object)
         
         return user_playlists
 
-
-    # TODO - Appropriates DRY
     def find_playlist(self, playlist_input_name) -> PlaylistObject:
         """Finds a specific playlist within the PlaylistList custom object"""
 
         all_user_playlists: PlaylistList = self.retrieve_playlists()
-        found_playlist: PlaylistObject | None = [current_playlist for current_playlist in all_user_playlists if current_playlist["name"].lower() == playlist_input_name.lower()]
+
+        found_playlist : PlaylistList | None = []
+
+        for current_playlist in all_user_playlists.playlist:
+            if current_playlist.name.lower() == playlist_input_name.lower():
+                found_playlist.append(current_playlist)
+
 
         return found_playlist
-        
 
     def create_spotify_playlist(self, playlist_name_input: str, playlist_desc_input: str | None) -> None:
         """Creates a new Spotfiy playlist for the user"""
 
         spotify_instance = self.instantiate_spotify()
-        current_user = spotify_instance.me()["id"]
-
+        
+        current_user = self.retrieve_access_token()
+       
+        print(current_user)
+       
+       
         spotify_instance.user_playlist_create(
             current_user,
             name=playlist_name_input,
@@ -281,11 +331,12 @@ class Spotify:
             if len(found_songs) == 1:
                 current_song_obj = SongObject(
                 song_name=found_songs[0].get("name"),
-                artist_name=found_songs[0].get("artist"),
+                artist_name=found_songs[0].get("artists")[0].get("name"),
                 identifier=found_songs[0].get("uri")
                 )
 
                 return current_song_obj
+            
             
 
             # TODO - Ask which song it is!
