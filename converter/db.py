@@ -1,6 +1,7 @@
 import psycopg2
 import os
 from typing import Tuple
+from conversion.song import SongObject
 
 TABLE_NAME: str = os.getenv("TABLE_NAME")
 
@@ -11,14 +12,14 @@ def instantiate_connection():
     return psycopg2.connect(uri)
 
 def create() -> None:
-    """"""
+    """Creates table in database."""
 
     with instantiate_connection() as connection:
         cursor = connection.cursor()
 
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS
-            {TABLE_NAME}(song TEXT, artist TEXT, youtube TEXT[], spotify TEXT[])"""
+            {TABLE_NAME}(song TEXT, artist TEXT, spotify_id TEXT[], youtube_id TEXT[], type TEXT[])"""
         )
 
         connection.commit()
@@ -28,61 +29,55 @@ def is_link_same(current_db_link: str, new_link: str) -> bool:
 
     return current_db_link == new_link
 
-def update_links_in_db(current_song_object) -> None:
+def update_links_in_db(current_song_object: SongObject) -> None:
     """Inserts song into row; Updates link values."""
 
     SONG_NAME: str = current_song_object.song_name
-    YOUTUBE_LINK: str = current_song_object.youtube_link
-    SPOTIFY_LINK: str = current_song_object.spotify_link
+    ARTIST_NAME: str = current_song_object.artist_name
+    IDENTIFIER: str = current_song_object.identifier
 
     with instantiate_connection() as connection:
         cursor = connection.cursor()
         cursor.execute(
             f"""SELECT *
             FROM {TABLE_NAME} WHERE
-            SONG_NAME = %(song_name)s""",
-            {"song_name": SONG_NAME}
+            song = %(song)s""",
+            {"song": SONG_NAME}
         )
 
         row = cursor.fetchone()
         if row:
-            song_key, youtube_value, spotify_value = row
+            song_output, artist_output, id_output, type_output = row
 
-            if youtube_value or not is_link_same(youtube_value, YOUTUBE_LINK):
+            if not is_link_same(id_output, IDENTIFIER):
                 cursor.execute(
-                    f"UPDATE {TABLE_NAME} SET youtube = ?",
-                    (youtube_value, song_key)
-                )
-
-            if spotify_value or not is_link_same(spotify_value, SPOTIFY_LINK):
-                cursor.execute(
-                    f"UPDATE {TABLE_NAME} set spotify = ?",
-                    (spotify_value, song_key)
+                    f"UPDATE {TABLE_NAME} SET id = %s WHERE song = %s",
+                    (IDENTIFIER, SONG_NAME)
                 )
 
         connection.commit()
 
-def add_song_row_in_db(current_song_object) -> None:
+def add_song_row_in_db(current_song_object: SongObject) -> None:
     """"""
 
     SONG_NAME: str = current_song_object.song_name
-    YOUTUBE_LINK: str = current_song_object.youtube_link
-    SPOTIFY_LINK: str = current_song_object.spotify_link
+    ARTIST_NAME: str = current_song_object.artist_name
+    IDENTIFIER: str = current_song_object.identifier
 
-    with instantiate_connection() as connection:
-        cursor = connection.cursor()
-        cursor.execute(
-                    f"""INSERT INTO {TABLE_NAME} (song, youtube, spotify)
-                    VALUES (%s, %s, %s)""",
-                    (
-                        SONG_NAME,
-                        YOUTUBE_LINK,
-                        SPOTIFY_LINK
-                    )
-                )
+    # with instantiate_connection() as connection:
+    #     cursor = connection.cursor()
+    #     cursor.execute(
+    #                 f"""INSERT INTO {TABLE_NAME} (song, artist, id, type)
+    #                 VALUES (%s, %s, %s, %s)""",
+    #                 (
+    #                     SONG_NAME,
+    #                     YOUTUBE_LINK,
+    #                     SPOTIFY_LINK
+    #                 )
+    #             )
         
-        connection.commit()
-        
+    #     connection.commit()
+       
 def query_song(**kwargs: dict) -> Tuple[str, str, str] | None:
     """Returns the row for the given song; returns None if the song does not exist."""
 

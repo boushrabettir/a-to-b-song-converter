@@ -2,6 +2,7 @@ import argparse
 from conversion.song import Convert, SongList
 from conversion.playlist import PlaylistList, PlaylistObject, Youtube, Spotify
 from dotenv import load_dotenv
+import db
 
 load_dotenv()
 
@@ -63,9 +64,10 @@ def main():
     
     # temp.add_song(playlist[0].playlist_id, found.list_of_songs[0].identifier)
 
-    temp = Spotify()
+    # temp = Spotify()
     
-    print(temp.query_song("Starships"))
+    # print(temp.query_song("Starships"))
+    db.create()
 
     
 
